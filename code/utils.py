@@ -22,3 +22,11 @@ def make_dataset(sigma=1, seed=1):
     x = np.arange(0, 10.1, 0.1)
     y = np.sin(x) + x / 2 + np.random.normal(0, sigma, x.shape)
     return [x, y]
+
+
+def make_dataset_distance(dim=3, seed=1):
+    # dim次元空間での原点からの距離
+    np.random.seed(seed)
+    x = np.random.randn(500, dim) * 10
+    y = np.sqrt((x**2).sum(axis=1))
+    return [x, y]

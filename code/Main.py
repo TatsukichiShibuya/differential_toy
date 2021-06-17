@@ -6,14 +6,9 @@ from utils import *
 
 
 def main():
-    dim, in_dim, out_dim, hid_dim = 5, 5, 1, 3
+    dim, in_dim, out_dim, hid_dim = 5, 3, 1, 3
 
-    dataset = make_dataset(sigma=0.3)
-    datax = dataset[0]
-    dataset[0] = datax.reshape(-1, 1)**np.arange(0, in_dim)
-    plt.plot(dataset[0][:, 1], dataset[1])
-    plt.savefig("image/dataset.png")
-
+    dataset = make_dataset_distance()
     trainset = [dataset[0][1:-1:2], dataset[1][0:-1:2]]
     testset = [dataset[0][1:-1:2], dataset[1][1:-1:2]]
 
@@ -37,12 +32,15 @@ def main():
         bpnn_pred[i] = pred
     print(f"DTTP : loss {np.sqrt((dttpnn_pred-testset[1])**2).sum()}")
     print(f"BP : loss {np.sqrt((bpnn_pred-testset[1])**2).sum()}")
+
+    """
     plt.figure()
-    plt.plot(testset[0][:, 1], testset[1], label="theor")
-    plt.plot(testset[0][:, 1], dttpnn_pred, label="DTTP")
-    plt.plot(testset[0][:, 1], bpnn_pred, label="BP")
+    plt.plot(testset[0], testset[1], label="theor")
+    plt.plot(testset[0], dttpnn_pred, label="DTTP")
+    plt.plot(testset[0], bpnn_pred, label="BP")
     plt.legend()
     plt.savefig("image/testset.png")
+    """
 
 
 if __name__ == '__main__':
