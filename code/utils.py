@@ -8,12 +8,20 @@ def leakyrelu(x, a):
     return x_copy
 
 
-def leakyrelu_dash(x, a):
+def leakyrelu_derivative(x, a):
     x_copy = x.copy()
     frag = x < 0
     x_copy[frag] = a
     x_copy[~frag] = 1
     return x_copy
+
+
+def mse(x, y):
+    return ((x - y)**2).sum() / 2
+
+
+def mse_derivative(x, y):
+    return x - y
 
 
 def make_dataset(sigma=1, seed=1):
