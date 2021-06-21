@@ -9,3 +9,9 @@ class DTTPNN(NN):
 
     def train(self, dataset, epochs, lr):
         pass
+
+    def test(self, x):
+        y = x
+        for i in range(self.dim):
+            y = self.act(self.weights[i]@y)
+        return y

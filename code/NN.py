@@ -6,8 +6,17 @@ from abc import ABCMeta, abstractmethod
 class NN(metaclass=ABCMeta):
     def __init__(self, dim, in_dim, out_dim, hid_dim):
         self.dim = dim
-        self.act = (lambda x: leakyrelu(x, a=0.2))
-        self.act_dash = (lambda x: leakyrelu_dash(x, a=0.2))
+
+        self.act = [None] * self.dim
+        for i in range(self.dim - 1):
+            self.act[i] = (lambda x: leakyrelu(x, a=0.2))
+        self.act[-1] = (lambda x: x)
+
+        self.act_dash = [None] * self.dim
+        for i in range(self.dim - 1):
+            self.act_dash[i] = (lambda x: leakyrelu_dash(x, a=0.2))
+        self.act_dash[-1] = (lambda x: 1)
+
         self.loss = (lambda y, y_: ((y - y_)**2).sum() / 2)
 
         self.weights = [None] * dim
