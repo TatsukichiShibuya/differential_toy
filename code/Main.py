@@ -5,20 +5,26 @@ from torch import nn, optim
 import torch
 
 from bp_net import *
+from dttp_net import *
 from utils import *
 
 
 def get_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="BP")
+    parser.add_argument("--problem", type=str, default="regression")
+    # parameters
     parser.add_argument("--dim", type=int, default=5)
     parser.add_argument("--in_dim", type=int, default=3)
     parser.add_argument("--hid_dim", type=int, default=3)
     parser.add_argument("--out_dim", type=int, default=1)
-    parser.add_argument("--learning_rate", type=float, default=2e-5)
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument("--activation_function", type=str, default="leakyrelu")
-    parser.add_argument("--model", type=str, default="BP")
-    parser.add_argument("--problem", type=str, default="regression")
+    # parameters using in BP
+    parser.add_argument("--learning_rate", "-lr", type=float, default=2e-6)
+    # parameters using in DTTP
+    parser.add_argument("--stepsize", type=float, default=2e-5)
+    parser.add_argument("--learning_rate_for_backward", "-lrb", type=float, default=1e-2)
 
     args = parser.parse_args()
     return args
@@ -60,7 +66,11 @@ def main(**kwargs):
                          loss_derivative=loss_derivative)
 
     # train
-    model.train(trainset, kwargs["epochs"], kwargs["learning_rate"])
+    if kwargs["model"] == "BP":
+        model.train(trainset, kwargs["epochs"], kwargs["learning_rate"])
+    elif kwargs["model"] == "DTTP":
+        model.train(trainset, kwargs["epochs"], kwargs["stepsize"],
+                    kwargs["learning_rate_for_backward"])
 
     # test
     pred = np.zeros_like(testset[1])
@@ -68,6 +78,7 @@ def main(**kwargs):
         pred[i] = model.predict(x)
     print(f"{kwargs['model']}: loss {np.sqrt((pred-testset[1])**2).sum()/2/testset[0].shape[0]}")
 
+    # plot
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
     fig = plt.figure(figsize=(10, 6))

@@ -1,10 +1,6 @@
 from utils import *
 import numpy as np
 from bp_layer import *
-"""
-TODO:
-・backwardをカプセル
-"""
 
 
 class bp_net:
@@ -36,29 +32,33 @@ class bp_net:
             for x, y in zip(dataset[0], dataset[1]):
                 # forward
                 y_pred = self.forward(x)
-                # backward
-                grads = [None] * self.dim
-                g = self.loss_derivative(y_pred, y)
-                for i in reversed(range(1, self.dim)):
-                    g = g * self.layers[i].activation_derivative(self.layers[i].linear_activation)
-                    self.layers[i].weight_grad = g.reshape(-1,
-                                                           1)@self.layers[i - 1].activation.reshape(1, -1)
-                    g = self.layers[i].weight.T@g
-                self.layers[0].weight_grad = g.reshape(-1, 1)@x.reshape(1, -1)
-                # update weights
-                for i in range(self.dim):
-                    self.layers[i].update_weight(lr)
 
+                # backward
+                self.backward(x, y, y_pred)
+                self.update_weights(lr)
+
+            # predict validation data
             pred = np.zeros_like(dataset[1])
             for i, x in enumerate(dataset[0]):
                 pred[i] = self.predict(x)
-            print(f"epoch {e}: {np.sqrt((pred-dataset[1])**2).sum()/2/dataset[0].shape[0]}")
+            print(f"epoch {e:<4}: {np.sqrt((pred-dataset[1])**2).sum()/2/dataset[0].shape[0]}")
 
     def forward(self, x, update=True):
         y = x
         for i in range(self.dim):
             y = self.layers[i].forward(y, update=update)
         return y
+
+    def backward(self, x, y, y_pred, update=True):
+        grads = [None] * self.dim
+        g = self.loss_derivative(y_pred, y)
+        for i in reversed(range(1, self.dim)):
+            g = self.layers[i].backward(g, self.layers[i - 1].activation, update=update)
+        self.layers[0].backward(g, x, update=update)
+
+    def update_weights(self, lr):
+        for i in range(self.dim):
+            self.layers[i].update_weight(lr)
 
     def predict(self, x):
         return self.forward(x, update=False)
