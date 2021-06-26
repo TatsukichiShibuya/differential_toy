@@ -1,31 +1,13 @@
-from utils import *
-import numpy as np
 from dttp_layer import *
+from net import *
+from utils import *
+
+import numpy as np
 
 
-class dttp_net:
+class dttp_net(net):
     def __init__(self, **kwargs):
-        self.dim = kwargs["dim"]
-        activation_function = kwargs["activation_function"]
-        activation_derivative = kwargs["activation_derivative"]
-
-        self.layers = [None] * self.dim
-        self.layers[0] = dttp_layer(in_dim=kwargs["in_dim"],
-                                    out_dim=kwargs["hid_dim"],
-                                    activation_function=activation_function,
-                                    activation_derivative=activation_derivative)
-        for i in range(1, self.dim - 1):
-            self.layers[i] = dttp_layer(in_dim=kwargs["hid_dim"],
-                                        out_dim=kwargs["hid_dim"],
-                                        activation_function=activation_function,
-                                        activation_derivative=activation_derivative)
-        self.layers[self.dim - 1] = dttp_layer(in_dim=kwargs["hid_dim"],
-                                               out_dim=kwargs["out_dim"],
-                                               activation_function=(lambda x: x),
-                                               activation_derivative=(lambda x: 1))
-
-        self.loss_function = kwargs["loss_function"]
-        self.loss_derivative = kwargs["loss_derivative"]
+        super().__init__(**kwargs)
 
     def train(self, dataset, epochs, stepsize, backlr):
         for e in range(epochs):
@@ -38,17 +20,11 @@ class dttp_net:
                 self.compute_target(y, y_pred, stepsize)
                 self.update_weights(x, y, y_pred)
 
-            # predict validation data
+            # predict
             pred = np.zeros_like(dataset[1])
             for i, x in enumerate(dataset[0]):
                 pred[i] = self.predict(x)
             print(f"epoch {e:<4}: {np.sqrt((pred-dataset[1])**2).sum()/2/dataset[0].shape[0]}")
-
-    def forward(self, x, update=True):
-        y = x
-        for i in range(self.dim):
-            y = self.layers[i].forward(y, update=update)
-        return y
 
     def update_backweights(self, lr):
         for i in range(self.dim):
@@ -76,5 +52,19 @@ class dttp_net:
             self.layers[i].weight += lr * (self.layers[i].target -
                                            self.layers[i].linear_activation).reshape(-1, 1)@n.reshape(1, -1)
 
-    def predict(self, x):
-        return self.forward(x, update=False)
+    def init_layers(self, **kwargs):
+        layers = [None] * self.dim
+        layers[0] = dttp_layer(in_dim=kwargs["in_dim"],
+                               out_dim=kwargs["hid_dim"],
+                               activation_function=kwargs["activation_function"],
+                               activation_derivative=kwargs["activation_derivative"])
+        for i in range(1, self.dim - 1):
+            layers[i] = dttp_layer(in_dim=kwargs["hid_dim"],
+                                   out_dim=kwargs["hid_dim"],
+                                   activation_function=kwargs["activation_function"],
+                                   activation_derivative=kwargs["activation_derivative"])
+        layers[-1] = dttp_layer(in_dim=kwargs["hid_dim"],
+                                out_dim=kwargs["out_dim"],
+                                activation_function=(lambda x: x),
+                                activation_derivative=(lambda x: 1))
+        return layers

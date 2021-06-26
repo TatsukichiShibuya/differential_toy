@@ -1,18 +1,12 @@
+from layer import *
+
 import numpy as np
 
 
-class dttp_layer:
+class dttp_layer(layer):
     def __init__(self, **kwargs):
-        self.weight = np.random.randn(kwargs["out_dim"], kwargs["in_dim"])
-        self.backweight = np.random.randn(kwargs["in_dim"], kwargs["out_dim"])
-        self.backweight_grad = None
-        self.activation_function = kwargs["activation_function"]
-        self.activation_derivative = kwargs["activation_derivative"]
-
+        super().__init__(**kwargs)
         self.target = None
-
-        self.activation = None
-        self.linear_activation = None
 
     def forward(self, x, update=True):
         a = self.activation_function(x)
