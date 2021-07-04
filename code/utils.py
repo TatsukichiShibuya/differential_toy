@@ -32,7 +32,7 @@ def make_dataset(sigma=1, seed=1):
     return [x, y]
 
 
-def make_dataset_distance(dim=3, seed=1):
+def make_dataset_distance(dim, seed=1):
     # dim次元空間での原点からの距離
     np.random.seed(seed)
     x = np.random.randn(500, dim) * 10

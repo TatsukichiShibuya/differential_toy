@@ -6,8 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from torch import nn, optim
+import pickle
 import torch
 import os
+import sys
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
@@ -47,6 +49,9 @@ def main(**kwargs):
     if kwargs["activation_function"] == "leakyrelu":
         activation_function = (lambda x: leakyrelu(x, a=0.2))
         activation_derivative = (lambda x: leakyrelu_derivative(x, a=0.2))
+    else:
+        sys.tracebacklimit = 0
+        raise NotImplementedError("No such activation")
 
     if kwargs["model"] == "BP":
         model = bp_net(dim=kwargs["dim"],
@@ -66,11 +71,45 @@ def main(**kwargs):
                          activation_derivative=activation_derivative,
                          loss_function=loss_function,
                          loss_derivative=loss_derivative)
+    elif kwargs["model"] == "DTTPflozen":
+        model = dttp_net(dim=kwargs["dim"],
+                         in_dim=kwargs["in_dim"],
+                         out_dim=kwargs["out_dim"],
+                         hid_dim=kwargs["hid_dim"],
+                         activation_function=activation_function,
+                         activation_derivative=activation_derivative,
+                         loss_function=loss_function,
+                         loss_derivative=loss_derivative)
+        with open('model.pickle', 'rb') as f:
+            layers = pickle.load(f)
+        for i in range(kwargs["dim"]):
+            model.layers[i].weight = layers[i]
+    else:
+        sys.tracebacklimit = 0
+        raise NotImplementedError("No such model")
+
+    ###
+    s = np.zeros((len(trainset[0]), kwargs["hid_dim"]))
+    for i, x in enumerate(trainset[0]):
+        h = x
+        for d in range(kwargs["dim"] - 1):
+            h = model.layers[d].forward(h, update=False)
+        s[i] = h
+    A = np.zeros((kwargs["hid_dim"], kwargs["hid_dim"]))
+    for i in range(kwargs["hid_dim"]):
+        for j in range(kwargs["hid_dim"]):
+            A[i, j] = (s[:, i] * s[:, j]).sum()
+    B = np.zeros(kwargs["hid_dim"])
+    for i in range(kwargs["hid_dim"]):
+        B[i] = (s[:, i] * trainset[1]).sum()
+    W = np.linalg.solve(A, B)
+    # model.layers[-1].weight = W.reshape(1, -1)
+    ###
 
     # train
     if kwargs["model"] == "BP":
         model.train(trainset, kwargs["epochs"], kwargs["learning_rate"])
-    elif kwargs["model"] == "DTTP":
+    elif kwargs["model"] in ["DTTP", "DTTPflozen"]:
         model.train(trainset, kwargs["epochs"], kwargs["stepsize"],
                     kwargs["learning_rate_for_backward"])
 
@@ -81,24 +120,26 @@ def main(**kwargs):
     print(f"{kwargs['model']}: loss {np.sqrt((pred-testset[1])**2).sum()/2/testset[0].shape[0]}")
 
     # plot
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    x = np.arange(-10, 10.1, 0.1)
-    y = np.arange(-10, 10.1, 0.1)
-    X, Y = np.meshgrid(x, y)
-    Z = np.zeros_like(X)
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            Z[i, j] = model.predict(np.array([X[i, j], Y[i, j]]))
-    ax.plot_wireframe(X, Y, Z, rstride=5, cstride=5, linewidth=0.3)
-    ax.view_init(elev=60, azim=60)
-    fig.savefig(f"3dplot.png")
+    if kwargs["in_dim"] == 2:
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        x = np.arange(-10, 10.1, 0.1)
+        y = np.arange(-10, 10.1, 0.1)
+        X, Y = np.meshgrid(x, y)
+        Z = np.zeros_like(X)
+        for i in range(X.shape[0]):
+            for j in range(X.shape[1]):
+                Z[i, j] = model.predict(np.array([X[i, j], Y[i, j]]))
+        ax.plot_wireframe(X, Y, Z, rstride=5, cstride=5, linewidth=0.3)
+        ax.view_init(elev=60, azim=60)
+        fig.savefig(f"3dplot_{kwargs['model']}.png")
 
 
 if __name__ == '__main__':
     FLAGS = vars(get_args())
+    print("--------------------------------------------------------------------------------")
     print(FLAGS)
+    print("--------------------------------------------------------------------------------")
     main(**FLAGS)
-    # debug(**FLAGS)
