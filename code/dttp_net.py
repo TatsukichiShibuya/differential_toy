@@ -10,7 +10,6 @@ class dttp_net(net):
         super().__init__(**kwargs)
 
     def train(self, dataset, epochs, stepsize, backlr):
-        # w_plot = np.zeros(epochs)
         # w_plot = np.zeros((epochs, 3))
         for e in range(epochs):
             for x, y in zip(dataset[0], dataset[1]):
@@ -20,7 +19,6 @@ class dttp_net(net):
                 # backward
                 self.compute_target(y, y_pred, stepsize)
                 self.update_weights(x, y, y_pred)
-            # w_plot[e] = np.linalg.norm(self.layers[-1].weight)
             # w_plot[e] = self.layers[-1].weight
             # predict
             pred = np.zeros_like(dataset[1])
@@ -73,8 +71,7 @@ class dttp_net(net):
                 # plot
                 ref_plot[i, num] = np.linalg.norm(gt - gft_1)
                 tar_plot[i, num] = np.linalg.norm(self.layers[i + 1].target - ft_1)
-                h_plot[i, num] = np.linalg.norm(
-                    self.layers[i].target - self.layers[i].linear_activation)
+                h_plot[i, num] = np.linalg.norm(self.layers[i].target - self.layers[i].linear_activation)
 
         for i in range(self.dim - 1):
             plt.figure()
@@ -100,18 +97,11 @@ class dttp_net(net):
         for i in range(self.dim):
             local_loss = ((self.layers[i].target - self.layers[i].linear_activation)**2).sum()
             lr = global_loss / (local_loss + 1e-9)
-
             h_previous = self.layers[i - 1].linear_activation if i != 0 else x
             s = self.layers[i].activation_function(h_previous)
             n = s / np.linalg.norm(s)**2
-            if i == self.dim - 1:  # 最終層以外固定
-                loss_b = self.loss_function(self.layers[-1].forward(h_previous, update=False), y)
-                self.layers[i].weight += lr * (self.layers[i].target -
-                                               self.layers[i].linear_activation).reshape(-1, 1)@n.reshape(1, -1)
-                loss_a = self.loss_function(self.layers[-1].forward(h_previous, update=False), y)
-                if loss_a > loss_b:
-                    import pdb
-                    pdb.set_trace()
+            self.layers[i].weight += lr * (self.layers[i].target -
+                                           self.layers[i].linear_activation).reshape(-1, 1)@n.reshape(1, -1)
 
     def init_layers(self, **kwargs):
         layers = [None] * self.dim
