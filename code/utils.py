@@ -1,8 +1,9 @@
 import numpy as np
+import torch
 
 
 def leakyrelu(x, a):
-    x_copy = x.copy()
+    x_copy = x.copy() if isinstance(x, np.ndarray) else x.clone()
     frag = x < 0
     x_copy[frag] = a * x_copy[frag]
     return x_copy
@@ -32,12 +33,18 @@ def make_dataset(sigma=1, seed=1):
     return [x, y]
 
 
-def make_dataset_distance(dim, seed=1):
+def make_dataset_distance(dim, size, seed=1, use_torch=False):
     # dim次元空間での原点からの距離
-    np.random.seed(seed)
-    x = np.random.randn(500, dim) * 10
-    y = np.sqrt((x**2).sum(axis=1))
-    return [x, y]
+    if use_torch:
+        torch.random.manual_seed(seed)
+        x = torch.normal(0, 1, size=(size, dim)) * 10
+        y = torch.sqrt((x**2).sum(axis=1))
+        return [x, y]
+    else:
+        np.random.seed(seed)
+        x = np.random.randn(size, dim) * 10
+        y = np.sqrt((x**2).sum(axis=1))
+        return [x, y]
 
 
 def debug(**kwargs):

@@ -1,5 +1,4 @@
 from layer import *
-
 import numpy as np
 
 
@@ -14,7 +13,7 @@ class dttp_layer(layer):
         if update:
             self.activation = a
             self.linear_activation = h
-            n = self.activation_function(h) / (self.activation_function(h)**2).sum()
+            n = self.activation_function(h) / np.linalg.norm(self.activation_function(h))**2
             self.backweight_grad = (x - self.backward(h)).reshape(-1, 1)@n.reshape(1, -1)
         return h
 

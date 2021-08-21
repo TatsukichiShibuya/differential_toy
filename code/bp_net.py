@@ -23,7 +23,7 @@ class bp_net(net):
             pred = np.zeros_like(dataset[1])
             for i, x in enumerate(dataset[0]):
                 pred[i] = self.predict(x)
-            print(f"epoch {e:<4}: {np.sqrt((pred-dataset[1])**2).sum()/2/dataset[0].shape[0]}")
+            print(f"epoch {e:<4}: {(np.linalg.norm(pred-dataset[1])**2)/(2*len(dataset[0]))}")
 
     def backward(self, x, y, y_pred, update=True):
         grads = [None] * self.dim
@@ -38,14 +38,17 @@ class bp_net(net):
 
     def init_layers(self, **kwargs):
         layers = [None] * self.dim
-        layers[0] = bp_layer(in_dim=kwargs["in_dim"], out_dim=kwargs["hid_dim"],
+        layers[0] = bp_layer(in_dim=kwargs["in_dim"],
+                             out_dim=kwargs["hid_dim"],
                              activation_function=kwargs["activation_function"],
                              activation_derivative=kwargs["activation_derivative"])
         for i in range(1, self.dim - 1):
-            layers[i] = bp_layer(in_dim=kwargs["hid_dim"], out_dim=kwargs["hid_dim"],
+            layers[i] = bp_layer(in_dim=kwargs["hid_dim"],
+                                 out_dim=kwargs["hid_dim"],
                                  activation_function=kwargs["activation_function"],
                                  activation_derivative=kwargs["activation_derivative"])
-        layers[-1] = bp_layer(in_dim=kwargs["hid_dim"], out_dim=kwargs["out_dim"],
+        layers[-1] = bp_layer(in_dim=kwargs["hid_dim"],
+                              out_dim=kwargs["out_dim"],
                               activation_function=(lambda x: x),
                               activation_derivative=(lambda x: 1))
         return layers
